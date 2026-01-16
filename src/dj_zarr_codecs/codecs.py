@@ -78,6 +78,7 @@ class ZarrCodec(SchemaCodec):
     """
 
     name = "zarr"
+    CODEC_VERSION = "1.0"  # Data format version for backward compatibility
 
     def validate(self, value: Any) -> None:
         """
@@ -122,7 +123,7 @@ class ZarrCodec(SchemaCodec):
         Returns
         -------
         dict
-            Metadata stored in database: path, store, shape, dtype.
+            Metadata stored in database: path, store, codec_version, shape, dtype.
 
         Raises
         ------
@@ -147,10 +148,16 @@ class ZarrCodec(SchemaCodec):
             # Write array to Zarr format
             zarr.save_array(store_map, value)
 
+            # Store version metadata in Zarr attributes
+            z = zarr.open(store_map, mode="r+")
+            z.attrs["codec_version"] = self.CODEC_VERSION
+            z.attrs["codec_name"] = self.name
+
             # Return metadata for database storage
             return {
                 "path": path,
                 "store": store_name,
+                "codec_version": self.CODEC_VERSION,
                 "shape": list(value.shape),
                 "dtype": str(value.dtype),
             }
@@ -188,7 +195,22 @@ class ZarrCodec(SchemaCodec):
             store_map = backend.get_fsmap(stored["path"])
 
             # Open Zarr array (read-only)
-            return zarr.open(store_map, mode="r")
+            z = zarr.open(store_map, mode="r")
+
+            # Check codec version for backward compatibility
+            # Priority: Zarr attrs > DB metadata > default "1.0"
+            version = z.attrs.get(
+                "codec_version", stored.get("codec_version", "1.0")
+            )
+
+            # All v1.x versions are compatible
+            if version.startswith("1."):
+                return z
+            else:
+                raise DataJointError(
+                    f"Unsupported zarr codec version: {version}. "
+                    f"Upgrade dj-zarr-codecs or migrate data."
+                )
 
         except Exception as e:
             raise DataJointError(f"Failed to decode Zarr array: {e}") from e
