@@ -136,7 +136,8 @@ MIT License. Copyright (c) 2026 DataJoint Inc. See [LICENSE](LICENSE) for detail
 - [Zarr](https://zarr.dev/) - Chunked, compressed, N-dimensional arrays
 - [datajoint-python](https://github.com/datajoint/datajoint-python) - DataJoint for Python
 
-## Support
+## Documentation & Support
 
-- [GitHub Issues](https://github.com/datajoint/dj-zarr-codecs/issues)
-- [DataJoint Slack](https://datajoint.com/slack)
+- [DataJoint Documentation](https://docs.datajoint.com) - Complete DataJoint documentation
+- [GitHub Discussions](https://github.com/datajoint/dj-zarr-codecs/discussions) - Ask questions and share use cases
+- [GitHub Issues](https://github.com/datajoint/dj-zarr-codecs/issues) - Report bugs and request features
