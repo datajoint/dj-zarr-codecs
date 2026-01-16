@@ -1,0 +1,63 @@
+[project]
+name = "dj-zarr-codecs"
+version = "0.1.0"
+description = "DataJoint codecs for Zarr array storage"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "Davis Bennett", email = "davis.v.bennett@gmail.com"},
+    {name = "Dimitri Yatsenko", email = "dimitri@datajoint.com"},
+]
+keywords = ["datajoint", "zarr", "codec", "array-storage"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+]
+
+dependencies = [
+    "datajoint>=2.0.0a22",
+    "zarr>=2.0",
+    "numpy>=1.20",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "ruff>=0.1.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/datajoint/dj-zarr-codecs"
+Repository = "https://github.com/datajoint/dj-zarr-codecs"
+Documentation = "https://github.com/datajoint/dj-zarr-codecs#readme"
+"Bug Tracker" = "https://github.com/datajoint/dj-zarr-codecs/issues"
+
+[project.entry-points."datajoint.codecs"]
+zarr = "dj_zarr_codecs:ZarrCodec"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --cov=dj_zarr_codecs --cov-report=term-missing"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP"]
+ignore = ["E501"]  # line too long (handled by formatter)
