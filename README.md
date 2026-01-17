@@ -31,7 +31,7 @@ schema = dj.Schema('my_schema')
 @schema
 class Recording(dj.Manual):
     definition = """
-    recording_id : uint16
+    recording_id : int32
     ---
     waveform : <zarr@>           # Stored as Zarr array
     """
@@ -84,7 +84,7 @@ Store numpy arrays in Zarr format with schema-addressed paths.
 ```python
 class MyTable(dj.Manual):
     definition = """
-    id : uint16
+    id : int32
     ---
     data : <zarr@>          # Default store
     large_data : <zarr@s3>  # Specific store
