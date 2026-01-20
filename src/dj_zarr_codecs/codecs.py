@@ -7,15 +7,9 @@ from typing import Any
 import numpy as np
 import zarr
 
-try:
-    import datajoint as dj
-    from datajoint import DataJointError
-    from datajoint.builtin_codecs import SchemaCodec
-except ImportError as e:
-    raise ImportError(
-        "datajoint>=2.0.0a22 is required. Install with: pip install 'datajoint>=2.0.0a22'"
-    ) from e
-
+import datajoint as dj
+from datajoint import DataJointError
+from datajoint.builtin_codecs import SchemaCodec
 
 class ZarrCodec(SchemaCodec):
     """

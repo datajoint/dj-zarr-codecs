@@ -3,7 +3,7 @@ name = "dj-zarr-codecs"
 version = "0.1.0"
 description = "DataJoint codecs for Zarr array storage"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = {text = "MIT"}
 authors = [
     {name = "Davis Bennett", email = "davis.v.bennett@gmail.com"},
@@ -24,10 +24,10 @@ classifiers = [
 dependencies = [
     "datajoint>=2.0.0a22",
     "zarr>=2.0",
-    "numpy>=1.20",
+    "numpy>=2.0",
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
@@ -46,6 +46,9 @@ zarr = "dj_zarr_codecs:ZarrCodec"
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
+
+[tool.uv.sources]
+datajoint = {git = "https://github.com/datajoint/datajoint-python.git"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
