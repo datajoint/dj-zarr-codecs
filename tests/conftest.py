@@ -102,3 +102,12 @@ def dj_connection(db_creds: DBCreds, tmp_path) -> Generator[dj.Connection, None,
         dj.config[key] = value
     dj.config.stores.clear()
     dj.config.stores.update(old_stores)
+
+@pytest.fixture(scope="function")
+def schema(dj_connection: dj.Connection) -> dj.Schema:
+    """
+    Fixture to create and drop a test schema for each test function.
+    """
+    test_schema = dj.Schema('test_schema', connection=dj_connection)
+    yield test_schema
+    test_schema.drop(prompt=False)

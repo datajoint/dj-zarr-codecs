@@ -5,15 +5,6 @@ import zarr
 
 from dj_zarr_codecs.codecs import ZarrCodec
 
-@pytest.fixture(scope="function")
-def schema(dj_connection: dj.Connection) -> dj.Schema:
-    """
-    Fixture to create and drop a test schema for each test function.
-    """
-    test_schema = dj.Schema('test_schema', connection=dj_connection)
-    yield test_schema
-    test_schema.drop(prompt=False)
-
 def test_numpy_array_roundtrip(schema: dj.Schema) -> None:
     """
     Test that we can round-trip a numpy array through DataJoint using ZarrCodec
