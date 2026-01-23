@@ -32,7 +32,7 @@ dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
     "ruff>=0.1.0",
-    "testcontainers[pgsql,postgres]>=4.14.0",
+    "testcontainers[mysql]>=4.14.0",
 ]
 
 [project.urls]
@@ -56,7 +56,6 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-v --cov=dj_zarr_codecs --cov-report=term-missing"
 
 [tool.ruff]
 line-length = 100

@@ -2,61 +2,70 @@ import logging
 from typing import Generator, TypedDict
 
 import pytest
-from testcontainers.postgres import PostgresContainer
+from testcontainers.mysql import MySqlContainer
 import datajoint as dj
 
 logger = logging.getLogger(__name__)
 
+
 class DBCreds(TypedDict):
-    backend: str
     host: str
     user: str
     password: str
 
+
 @pytest.fixture(scope="session")
-def postgres_container() -> Generator[PostgresContainer, None, None]:
-    """Start PostgreSQL container for the test session"""
-    container = PostgresContainer(
-        image="postgres:15",
-        username="postgres",
+def mysql_container() -> Generator[MySqlContainer, None, None]:
+    """Start MySQL container for the test session"""
+    container = MySqlContainer(
+        image="mysql:8.0",
+        username="root",
         password="password",
         dbname="test",
     )
     container.start()
 
     host = container.get_container_host_ip()
-    port = container.get_exposed_port(5432)
-    logger.info(f"PostgreSQL container started at {host}:{port}")
+    port = container.get_exposed_port(3306)
+    logger.info(f"MySQL container started at {host}:{port}")
 
     yield container
 
     container.stop()
-    logger.info("PostgreSQL container stopped")
+    logger.info("MySQL container stopped")
+
 
 @pytest.fixture(scope="session")
-def db_creds(postgres_container: PostgresContainer) -> DBCreds:
-    host = postgres_container.get_container_host_ip()
-    port = postgres_container.get_exposed_port(5432)
+def db_creds(mysql_container: MySqlContainer) -> DBCreds:
+    host = mysql_container.get_container_host_ip()
+    port = mysql_container.get_exposed_port(3306)
 
     return {
-            "backend": "postgresql",
-            "host": f"{host}:{port}",
-            "user": "postgres",
-            "password": "password",
-            }
+        "host": f"{host}:{port}",
+        "user": "root",
+        "password": "password",
+    }
 
 
 @pytest.fixture(scope="function")
-def dj_connection(db_creds: DBCreds) -> Generator[dj.Connection, None, None]:
+def dj_connection(db_creds: DBCreds, tmp_path) -> Generator[dj.Connection, None, None]:
     """Create connection for the specified backend.
 
-    This fixture is function-scoped to ensure database.backend config
+    This fixture is function-scoped to ensure database config
     is restored after each test, preventing config pollution between tests.
     """
-    old_config = dict(dj.config._conf)
-
-    # Configure backend
-    dj.config["database.backend"] = db_creds["backend"]
+    # Save original config values
+    old_config = {
+        "database.host": dj.config.database.host,
+        "database.port": dj.config.database.port,
+        "database.user": dj.config.database.user,
+        "database.password": dj.config.database.password,
+        "database.use_tls": dj.config.database.use_tls,
+        "safemode": dj.config.safemode,
+        "loglevel": dj.config.loglevel,
+        "enable_python_native_blobs": dj.config.enable_python_native_blobs,
+    }
+    old_stores = dict(dj.config.stores)
 
     # Parse host:port
     host_port = db_creds["host"]
@@ -68,9 +77,16 @@ def dj_connection(db_creds: DBCreds) -> Generator[dj.Connection, None, None]:
     dj.config["database.password"] = db_creds["password"]
     dj.config["database.use_tls"] = False
     dj.config["safemode"] = False
-    dj.config["loglevel"] = "DEBUG"
+    dj.config["loglevel"] = "INFO"
+    dj.config["enable_python_native_blobs"] = True
 
-    logger.info(f"Connecting to {db_creds['backend']} at {host_port}")
+    # Configure a local file store for testing
+    dj.config.stores["store"] = {
+        "protocol": "file",
+        "location": str(tmp_path),
+    }
+
+    logger.info(f"Connecting to MySQL at {host_port}")
 
     connection = dj.Connection(
         host=host_port,
@@ -84,4 +100,5 @@ def dj_connection(db_creds: DBCreds) -> Generator[dj.Connection, None, None]:
     connection.close()
     for key, value in old_config.items():
         dj.config[key] = value
-
+    dj.config.stores.clear()
+    dj.config.stores.update(old_stores)
