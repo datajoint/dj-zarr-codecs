@@ -138,26 +138,18 @@ class ZarrArrayCodec(SchemaCodec):
         # Get fsspec mapper for direct Zarr write
         store_map = backend.get_fsmap(path)
 
-        add_attrs: dict[str, object] = {
-            "datajoint": {
-                "datajoint-python": {"version": dj.__version__},
-                "dj-zarr-codecs": {"version" : __version__},
-                }
-            }
+        zarr.create_array(store=store_map, data=value, write_data=True)
 
-        # Write array to Zarr format
-        if isinstance(value, zarr.Array):
-            old_attrs = value.attrs.asdict()
-        else:
-            old_attrs = {}
-
-        zarr.create_array(store=store_map, data=value, write_data=True, attributes=old_attrs | add_attrs)
-        # Return metadata for database storage
+        # Return metadata for database storage (stored as JSON column)
         return {
             "path": path,
             "store": store_name,
             "shape": list(value.shape),
             "dtype": str(value.dtype),
+            "provenance": {
+                "datajoint-python": dj.__version__,
+                "dj-zarr-codecs": __version__,
+            },
         }
 
     def decode(self, stored: dict, *, key: dict | None = None) -> zarr.Array:
