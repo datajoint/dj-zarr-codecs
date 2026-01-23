@@ -3,7 +3,7 @@ import numpy as np
 import pytest
 import zarr
 
-from dj_zarr_codecs.codecs import ZarrCodec
+from dj_zarr_codecs.codecs import ZarrArrayCodec
 
 def test_numpy_array_roundtrip(schema: dj.Schema) -> None:
     """

@@ -10,7 +10,7 @@ import datajoint as dj
 from datajoint import DataJointError
 from datajoint.builtin_codecs import SchemaCodec
 
-class ZarrCodec(SchemaCodec):
+class ZarrArrayCodec(SchemaCodec):
     """
     Store numpy arrays in Zarr format with schema-addressed paths.
 
