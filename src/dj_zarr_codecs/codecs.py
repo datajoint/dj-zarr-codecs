@@ -6,18 +6,11 @@ from typing import Any
 
 import numpy as np
 import zarr
+import datajoint as dj
+from datajoint import DataJointError
+from datajoint.builtin_codecs import SchemaCodec
 
-try:
-    import datajoint as dj
-    from datajoint import DataJointError
-    from datajoint.builtin_codecs import SchemaCodec
-except ImportError as e:
-    raise ImportError(
-        "datajoint>=2.0.0a22 is required. Install with: pip install 'datajoint>=2.0.0a22'"
-    ) from e
-
-
-class ZarrCodec(SchemaCodec):
+class ZarrArrayCodec(SchemaCodec):
     """
     Store numpy arrays in Zarr format with schema-addressed paths.
 
@@ -78,7 +71,6 @@ class ZarrCodec(SchemaCodec):
     """
 
     name = "zarr"
-    CODEC_VERSION = "1.0"  # Data format version for backward compatibility
 
     def validate(self, value: Any) -> None:
         """
@@ -94,16 +86,16 @@ class ZarrCodec(SchemaCodec):
         DataJointError
             If value is not a numpy array or has object dtype.
         """
-        if not isinstance(value, np.ndarray):
-            raise DataJointError(
-                f"<zarr> requires numpy.ndarray, got {type(value).__name__}"
+        if not isinstance(value, np.ndarray | zarr.Array):
+            raise TypeError(
+                f"<zarr> requires a Numpy array or Zarr array, got {type(value).__name__}"
             )
         if value.dtype == object:
             raise DataJointError("<zarr> does not support object dtype arrays")
 
     def encode(
         self,
-        value: np.ndarray,
+        value: np.ndarray | zarr.Array,
         *,
         key: dict | None = None,
         store_name: str | None = None,
@@ -130,40 +122,35 @@ class ZarrCodec(SchemaCodec):
         DataJointError
             If encoding fails.
         """
-        try:
-            # Extract context from key
-            schema, table, field, primary_key = self._extract_context(key)
+        # import here to avoid circular import
+        from dj_zarr_codecs import __version__
+        # Extract context from key
+        schema, table, field, primary_key = self._extract_context(key)
 
-            # Build schema-addressed path
-            path, _token = self._build_path(
-                schema, table, field, primary_key, ext=".zarr", store_name=store_name
-            )
+        # Build schema-addressed path
+        path, _token = self._build_path(
+            schema, table, field, primary_key, ext=".zarr", store_name=store_name
+        )
 
-            # Get storage backend
-            backend = self._get_backend(store_name)
+        # Get storage backend
+        backend = self._get_backend(store_name)
 
-            # Get fsspec mapper for direct Zarr write
-            store_map = backend.get_fsmap(path)
+        # Get fsspec mapper for direct Zarr write
+        store_map = backend.get_fsmap(path)
 
-            # Write array to Zarr format
-            zarr.save_array(store_map, value)
+        zarr.create_array(store=store_map, data=value, write_data=True)
 
-            # Store version metadata in Zarr attributes
-            z = zarr.open(store_map, mode="r+")
-            z.attrs["codec_version"] = self.CODEC_VERSION
-            z.attrs["codec_name"] = self.name
-
-            # Return metadata for database storage
-            return {
-                "path": path,
-                "store": store_name,
-                "codec_version": self.CODEC_VERSION,
-                "shape": list(value.shape),
-                "dtype": str(value.dtype),
-            }
-
-        except Exception as e:
-            raise DataJointError(f"Failed to encode Zarr array: {e}") from e
+        # Return metadata for database storage (stored as JSON column)
+        return {
+            "path": path,
+            "store": store_name,
+            "shape": list(value.shape),
+            "dtype": str(value.dtype),
+            "provenance": {
+                "datajoint-python": dj.__version__,
+                "dj-zarr-codecs": __version__,
+            },
+        }
 
     def decode(self, stored: dict, *, key: dict | None = None) -> zarr.Array:
         """
@@ -187,30 +174,11 @@ class ZarrCodec(SchemaCodec):
         DataJointError
             If decoding fails.
         """
-        try:
-            # Get storage backend
-            backend = self._get_backend(stored.get("store"))
+        # Get storage backend
+        backend = self._get_backend(stored.get("store"))
 
-            # Get fsspec mapper for Zarr path
-            store_map = backend.get_fsmap(stored["path"])
+        # Get fsspec mapper for Zarr path
+        store_map = backend.get_fsmap(stored["path"])
 
-            # Open Zarr array (read-only)
-            z = zarr.open(store_map, mode="r")
-
-            # Check codec version for backward compatibility
-            # Priority: Zarr attrs > DB metadata > default "1.0"
-            version = z.attrs.get(
-                "codec_version", stored.get("codec_version", "1.0")
-            )
-
-            # All v1.x versions are compatible
-            if version.startswith("1."):
-                return z
-            else:
-                raise DataJointError(
-                    f"Unsupported zarr codec version: {version}. "
-                    f"Upgrade dj-zarr-codecs or migrate data."
-                )
-
-        except Exception as e:
-            raise DataJointError(f"Failed to decode Zarr array: {e}") from e
+        # Open Zarr array (read-only)
+        return zarr.open(store_map, mode="r")
