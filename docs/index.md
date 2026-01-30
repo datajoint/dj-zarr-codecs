@@ -59,7 +59,7 @@ zarr_array = (Recording & {"recording_id": 1}).fetch1("waveform")
 result = np.mean(zarr_array, axis=0)
 
 # Or access Zarr features
-print(zarr_array.shape)   # (1000, 32)
+print(zarr_array.shape)  # (1000, 32)
 print(zarr_array.chunks)  # Zarr chunking info
 ```
 
@@ -111,10 +111,12 @@ Arrays are stored with schema-addressed paths:
 {store_root}/{schema}/{table}/{pk}/{field}.zarr/
 ```
 
-For example, a recording with `recording_id=1` in schema `neuro` would be stored at:
+For example, a recording with `recording_id=1` in schema `neuro` would be stored
+at:
 
 ```
 s3://my-bucket/datajoint/neuro/recording/recording_id=1/waveform.zarr/
 ```
 
-This structure makes it easy to browse and manage stored data outside of DataJoint.
+This structure makes it easy to browse and manage stored data outside of
+DataJoint.
