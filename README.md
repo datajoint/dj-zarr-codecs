@@ -1,18 +1,25 @@
 # dj-zarr-codecs
 
-DataJoint codecs for storing arrays in [Zarr](https://zarr.dev/) format with schema-addressed paths.
+DataJoint codecs for storing arrays in [Zarr](https://zarr.dev/) format with
+schema-addressed paths.
 
 ## Overview
 
-This package provides DataJoint codecs that store numpy arrays as Zarr format in object storage, using DataJoint's schema-addressed storage system. This creates browsable, organized storage that mirrors your database structure.
+This package provides DataJoint codecs that store numpy arrays as Zarr format in
+object storage, using DataJoint's schema-addressed storage system. This creates
+browsable, organized storage that mirrors your database structure.
 
 ## Features
 
-- **Schema-addressed storage**: Paths mirror database structure (`{schema}/{table}/{pk}/{field}.zarr`)
-- **Zarr format**: Portable, cloud-optimized array storage with chunking and compression
-- **Lazy loading**: Efficient access to large arrays without loading entire datasets
+- **Schema-addressed storage**: Paths mirror database structure
+  (`{schema}/{table}/{pk}/{field}.zarr`)
+- **Zarr format**: Portable, cloud-optimized array storage with chunking and
+  compression
+- **Lazy loading**: Efficient access to large arrays without loading entire
+  datasets
 - **Direct access**: Use `zarr.open(ref.fsmap)` for advanced Zarr features
-- **Automatic registration**: Codecs are automatically available after installation
+- **Automatic registration**: Codecs are automatically available after
+  installation
 
 ## Installation
 
@@ -26,7 +33,8 @@ pip install dj-zarr-codecs
 import datajoint as dj
 import numpy as np
 
-schema = dj.Schema('my_schema')
+schema = dj.Schema("my_schema")
+
 
 @schema
 class Recording(dj.Manual):
@@ -36,20 +44,23 @@ class Recording(dj.Manual):
     waveform : <zarr@>           # Stored as Zarr array
     """
 
+
 # Insert numpy array
-Recording.insert1({
-    'recording_id': 1,
-    'waveform': np.random.randn(1000, 32),
-})
+Recording.insert1(
+    {
+        "recording_id": 1,
+        "waveform": np.random.randn(1000, 32),
+    }
+)
 
 # Fetch returns Zarr array (read-only)
-zarr_array = (Recording & {'recording_id': 1}).fetch1('waveform')
+zarr_array = (Recording & {"recording_id": 1}).fetch1("waveform")
 
 # Use directly with numpy
 result = np.mean(zarr_array, axis=0)
 
 # Or access as Zarr for advanced features
-print(zarr_array.shape)   # (1000, 32)
+print(zarr_array.shape)  # (1000, 32)
 print(zarr_array.chunks)  # Zarr chunking info
 ```
 
@@ -58,12 +69,12 @@ print(zarr_array.chunks)  # Zarr chunking info
 Configure your object storage in DataJoint:
 
 ```python
-dj.config['stores'] = {
-    'mystore': {
-        'protocol': 's3',
-        'endpoint': 's3.amazonaws.com',
-        'bucket': 'my-bucket',
-        'location': 'datajoint',
+dj.config["stores"] = {
+    "mystore": {
+        "protocol": "s3",
+        "endpoint": "s3.amazonaws.com",
+        "bucket": "my-bucket",
+        "location": "datajoint",
     }
 }
 ```
@@ -75,12 +86,14 @@ dj.config['stores'] = {
 Store numpy arrays in Zarr format with schema-addressed paths.
 
 **Features:**
+
 - Portable Zarr format (readable by any Zarr library)
 - Efficient chunked storage
 - Optional compression
 - Schema-addressed paths for organization
 
 **Usage:**
+
 ```python
 class MyTable(dj.Manual):
     definition = """
@@ -109,7 +122,8 @@ pytest
 
 ### Code Style
 
-This project uses [Ruff](https://docs.astral.sh/ruff/) for linting and formatting:
+This project uses [Ruff](https://docs.astral.sh/ruff/) for linting and
+formatting:
 
 ```bash
 ruff check src tests
@@ -128,16 +142,21 @@ Contributions are welcome! Please:
 
 ## License
 
-MIT License. Copyright (c) 2026 DataJoint Inc. See [LICENSE](LICENSE) for details.
+MIT License. Copyright (c) 2026 DataJoint Inc. See [LICENSE](LICENSE) for
+details.
 
 ## Related Projects
 
 - [DataJoint](https://datajoint.com) - Framework for scientific data pipelines
 - [Zarr](https://zarr.dev/) - Chunked, compressed, N-dimensional arrays
-- [datajoint-python](https://github.com/datajoint/datajoint-python) - DataJoint for Python
+- [datajoint-python](https://github.com/datajoint/datajoint-python) - DataJoint
+  for Python
 
 ## Documentation & Support
 
-- [DataJoint Documentation](https://docs.datajoint.com) - Complete DataJoint documentation
-- [GitHub Discussions](https://github.com/datajoint/dj-zarr-codecs/discussions) - Ask questions and share use cases
-- [GitHub Issues](https://github.com/datajoint/dj-zarr-codecs/issues) - Report bugs and request features
+- [DataJoint Documentation](https://docs.datajoint.com) - Complete DataJoint
+  documentation
+- [GitHub Discussions](https://github.com/datajoint/dj-zarr-codecs/discussions) -
+  Ask questions and share use cases
+- [GitHub Issues](https://github.com/datajoint/dj-zarr-codecs/issues) - Report
+  bugs and request features
