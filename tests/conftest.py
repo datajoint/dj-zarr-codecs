@@ -1,5 +1,5 @@
 import logging
-import shutil
+import subprocess
 from collections.abc import Generator
 from typing import TypedDict
 
@@ -9,8 +9,24 @@ from testcontainers.mysql import MySqlContainer
 
 logger = logging.getLogger(__name__)
 
+
+def _is_docker_available() -> bool:
+    """Check if Docker daemon is running and accessible."""
+    try:
+        result = subprocess.run(
+            ["docker", "info"],
+            capture_output=True,
+            timeout=5,
+            check=False,
+        )
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return False
+    else:
+        return result.returncode == 0
+
+
 # Check if Docker is available
-DOCKER_AVAILABLE = shutil.which("docker") is not None
+DOCKER_AVAILABLE = _is_docker_available()
 
 
 class DBCreds(TypedDict):
