@@ -1,4 +1,5 @@
 import logging
+import shutil
 from collections.abc import Generator
 from typing import TypedDict
 
@@ -7,6 +8,9 @@ import pytest
 from testcontainers.mysql import MySqlContainer
 
 logger = logging.getLogger(__name__)
+
+# Check if Docker is available
+DOCKER_AVAILABLE = shutil.which("docker") is not None
 
 
 class DBCreds(TypedDict):
@@ -17,7 +21,9 @@ class DBCreds(TypedDict):
 
 @pytest.fixture(scope="session")
 def mysql_container() -> Generator[MySqlContainer, None, None]:
-    """Start MySQL container for the test session"""
+    """Start MySQL container for the test session."""
+    if not DOCKER_AVAILABLE:
+        pytest.skip("Docker is not available")
     container = MySqlContainer(
         image="mysql:8.0",
         username="root",
