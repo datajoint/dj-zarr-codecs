@@ -17,7 +17,6 @@ browsable, organized storage that mirrors your database structure.
   compression
 - **Lazy loading**: Efficient access to large arrays without loading entire
   datasets
-- **Direct access**: Use `zarr.open(ref.fsmap)` for advanced Zarr features
 - **Automatic registration**: Codecs are automatically available after
   installation
 
@@ -39,9 +38,9 @@ schema = dj.Schema("my_schema")
 @schema
 class Recording(dj.Manual):
     definition = """
-    recording_id : int32
+    recording_id : int
     ---
-    waveform : <zarr@>           # Stored as Zarr array
+    waveform : <zarr@store>           # Stored as Zarr array
     """
 
 
@@ -59,7 +58,7 @@ zarr_array = (Recording & {"recording_id": 1}).fetch1("waveform")
 # Use directly with numpy
 result = np.mean(zarr_array, axis=0)
 
-# Or access as Zarr for advanced features
+# Or access Zarr features
 print(zarr_array.shape)  # (1000, 32)
 print(zarr_array.chunks)  # Zarr chunking info
 ```
@@ -70,7 +69,7 @@ Configure your object storage in DataJoint:
 
 ```python
 dj.config["stores"] = {
-    "mystore": {
+    "store": {
         "protocol": "s3",
         "endpoint": "s3.amazonaws.com",
         "bucket": "my-bucket",
@@ -79,9 +78,9 @@ dj.config["stores"] = {
 }
 ```
 
-## Codecs
+## Usage
 
-### `<zarr@>` / `<zarr@store>`
+### `<zarr@store>`
 
 Store numpy arrays in Zarr format with schema-addressed paths.
 
@@ -97,66 +96,27 @@ Store numpy arrays in Zarr format with schema-addressed paths.
 ```python
 class MyTable(dj.Manual):
     definition = """
-    id : int32
+    id : int
     ---
-    data : <zarr@>          # Default store
-    large_data : <zarr@s3>  # Specific store
+    data : <zarr@store>          # Uses 'store' from dj.config["stores"]
+    large_data : <zarr@archive>  # Uses 'archive' store
     """
 ```
 
-## Development
+## Storage Structure
 
-### Setup
+Arrays are stored with schema-addressed paths:
 
-```bash
-git clone https://github.com/datajoint/dj-zarr-codecs.git
-cd dj-zarr-codecs
-pip install -e ".[dev]"
+```
+{store_root}/{schema}/{table}/{pk}/{field}.zarr/
 ```
 
-### Testing
+For example, a recording with `recording_id=1` in schema `neuro` would be stored
+at:
 
-```bash
-pytest
+```
+s3://my-bucket/datajoint/neuro/recording/recording_id=1/waveform.zarr/
 ```
 
-### Code Style
-
-This project uses [Ruff](https://docs.astral.sh/ruff/) for linting and
-formatting:
-
-```bash
-ruff check src tests
-ruff format src tests
-```
-
-## Contributing
-
-Contributions are welcome! Please:
-
-1. Fork the repository
-2. Create a feature branch
-3. Add tests for new functionality
-4. Ensure all tests pass
-5. Submit a pull request
-
-## License
-
-MIT License. Copyright (c) 2026 DataJoint Inc. See [LICENSE](LICENSE) for
-details.
-
-## Related Projects
-
-- [DataJoint](https://datajoint.com) - Framework for scientific data pipelines
-- [Zarr](https://zarr.dev/) - Chunked, compressed, N-dimensional arrays
-- [datajoint-python](https://github.com/datajoint/datajoint-python) - DataJoint
-  for Python
-
-## Documentation & Support
-
-- [DataJoint Documentation](https://docs.datajoint.com) - Complete DataJoint
-  documentation
-- [GitHub Discussions](https://github.com/datajoint/dj-zarr-codecs/discussions) -
-  Ask questions and share use cases
-- [GitHub Issues](https://github.com/datajoint/dj-zarr-codecs/issues) - Report
-  bugs and request features
+This structure makes it easy to browse and manage stored data outside of
+DataJoint.

@@ -4,17 +4,18 @@ from __future__ import annotations
 
 from typing import Any
 
+import datajoint as dj
 import numpy as np
 import zarr
-import datajoint as dj
 from datajoint import DataJointError
 from datajoint.builtin_codecs import SchemaCodec
 
-class ZarrArrayCodec(SchemaCodec):
-    """
-    Store numpy arrays in Zarr format with schema-addressed paths.
 
-    The ``<zarr@>`` codec stores numpy arrays as Zarr format in object storage
+class ZarrArrayCodec(SchemaCodec):  # type: ignore[misc]
+    """
+    Store NumPy arrays in Zarr format with schema-addressed paths.
+
+    The ``<zarr@>`` codec stores NumPy arrays as Zarr format in object storage
     using schema-addressed paths: ``{schema}/{table}/{pk}/{field}.zarr``.
 
     Features:
@@ -39,7 +40,7 @@ class ZarrArrayCodec(SchemaCodec):
             spectrogram : <zarr@archive>  # specific store
             '''
 
-        # Insert numpy array
+        # Insert NumPy array
         Recording.insert1({
             'recording_id': 1,
             'waveform': np.random.randn(1000, 32),
@@ -48,7 +49,7 @@ class ZarrArrayCodec(SchemaCodec):
         # Fetch returns Zarr array (read-only)
         zarr_array = (Recording & {'recording_id': 1}).fetch1('waveform')
 
-        # Use with numpy
+        # Use with NumPy
         result = np.mean(zarr_array, axis=0)
 
         # Access Zarr features
@@ -74,7 +75,7 @@ class ZarrArrayCodec(SchemaCodec):
 
     def validate(self, value: Any) -> None:
         """
-        Validate that value is a numpy array suitable for Zarr storage.
+        Validate that value is a NumPy array suitable for Zarr storage.
 
         Parameters
         ----------
@@ -83,30 +84,32 @@ class ZarrArrayCodec(SchemaCodec):
 
         Raises
         ------
+        TypeError
+            If value is not a NumPy array or Zarr array.
         DataJointError
-            If value is not a numpy array or has object dtype.
+            If array has object dtype.
         """
         if not isinstance(value, np.ndarray | zarr.Array):
-            raise TypeError(
-                f"<zarr> requires a Numpy array or Zarr array, got {type(value).__name__}"
-            )
+            msg = f"<zarr> requires a NumPy array or Zarr array, got {type(value).__name__}"
+            raise TypeError(msg)
         if value.dtype == object:
-            raise DataJointError("<zarr> does not support object dtype arrays")
+            msg = "<zarr> does not support object dtype arrays"
+            raise DataJointError(msg)
 
     def encode(
         self,
-        value: np.ndarray | zarr.Array,
+        value: np.ndarray[Any, Any] | zarr.Array[Any],
         *,
-        key: dict | None = None,
+        key: dict[str, Any] | None = None,
         store_name: str | None = None,
-    ) -> dict:
+    ) -> dict[str, Any]:
         """
-        Encode numpy array as Zarr format in object storage.
+        Encode NumPy array as Zarr format in object storage.
 
         Parameters
         ----------
         value : np.ndarray
-            Numpy array to store.
+            NumPy array to store.
         key : dict, optional
             Primary key values for path construction.
         store_name : str, optional
@@ -122,8 +125,8 @@ class ZarrArrayCodec(SchemaCodec):
         DataJointError
             If encoding fails.
         """
-        # import here to avoid circular import
-        from dj_zarr_codecs import __version__
+        from dj_zarr_codecs import __version__  # noqa: PLC0415
+
         # Extract context from key
         schema, table, field, primary_key = self._extract_context(key)
 
@@ -138,7 +141,7 @@ class ZarrArrayCodec(SchemaCodec):
         # Get fsspec mapper for direct Zarr write
         store_map = backend.get_fsmap(path)
 
-        zarr.create_array(store=store_map, data=value, write_data=True)
+        zarr.create_array(store=store_map, data=value, write_data=True)  # type: ignore[arg-type]
 
         # Return metadata for database storage (stored as JSON column)
         return {
@@ -152,7 +155,9 @@ class ZarrArrayCodec(SchemaCodec):
             },
         }
 
-    def decode(self, stored: dict, *, key: dict | None = None) -> zarr.Array:
+    def decode(
+        self, stored: dict[str, Any], *, key: dict[str, Any] | None = None
+    ) -> zarr.Array[Any]:
         """
         Decode Zarr array from object storage.
 
@@ -166,7 +171,7 @@ class ZarrArrayCodec(SchemaCodec):
         Returns
         -------
         zarr.Array
-            Read-only Zarr array. Use with numpy operations or access
+            Read-only Zarr array. Use with NumPy operations or access
             Zarr-specific features.
 
         Raises
@@ -174,6 +179,7 @@ class ZarrArrayCodec(SchemaCodec):
         DataJointError
             If decoding fails.
         """
+        del key  # unused
         # Get storage backend
         backend = self._get_backend(stored.get("store"))
 
@@ -181,4 +187,4 @@ class ZarrArrayCodec(SchemaCodec):
         store_map = backend.get_fsmap(stored["path"])
 
         # Open Zarr array (read-only)
-        return zarr.open(store_map, mode="r")
+        return zarr.open_array(store_map, mode="r")
