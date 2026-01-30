@@ -31,6 +31,9 @@ jobs:
 
       - uses: astral-sh/setup-uv@v7
 
+      - name: Generate version file
+        run: uvx hatch build --hooks-only
+
       - uses: pre-commit/action@v3.0.1
         with:
           extra_args: --hook-stage manual --all-files
