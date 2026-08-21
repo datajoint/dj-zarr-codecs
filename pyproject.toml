@@ -10,7 +10,7 @@ authors = [
 ]
 description = "DataJoint codecs for Zarr array storage"
 readme = "README.md"
-license = "MIT"
+license = "Apache-2.0"
 license-files = ["LICENSE"]
 requires-python = ">=3.11"
 
