@@ -142,7 +142,7 @@ Contributions are welcome! Please:
 
 ## License
 
-MIT License. Copyright (c) 2026 DataJoint Inc. See [LICENSE](LICENSE) for
+Apache License 2.0. Copyright 2026 DataJoint Inc. See [LICENSE](LICENSE) for
 details.
 
 ## Related Projects
