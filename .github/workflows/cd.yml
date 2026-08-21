@@ -29,7 +29,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: hynek/build-and-inspect-python-package@v2
+      # v3 ships Twine 7, which understands packaging metadata 2.5 — what
+      # hatchling emits for a PEP 639 SPDX license. v2 bundles Twine 6 and
+      # fails `twine check --strict`. v3 no longer force-tags majors, so this
+      # pins the full version deliberately.
+      - uses: hynek/build-and-inspect-python-package@v3.0.1
 
   publish:
     needs: [dist]

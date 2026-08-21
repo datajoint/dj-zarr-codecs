@@ -108,7 +108,10 @@ report.exclude_also = [
 
 [tool.mypy]
 files = ["src", "tests"]
-python_version = "3.10"
+# 3.12, not the 3.11 floor in requires-python: numpy ships stubs using PEP 695
+# `type` statements, which mypy cannot parse when targeting < 3.12. The 3.11
+# floor is enforced by ruff (which infers it from requires-python) and pylint.
+python_version = "3.12"
 warn_unused_configs = true
 strict = true
 enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
@@ -190,7 +193,7 @@ ignore = [
 
 
 [tool.pylint]
-py-version = "3.10"
+py-version = "3.11"  # matches requires-python
 ignore-paths = [".*/_version.py"]
 reports.output-format = "colorized"
 similarities.ignore-imports = "yes"
