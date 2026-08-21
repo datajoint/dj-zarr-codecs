@@ -5,7 +5,7 @@ from typing import TypedDict
 
 import datajoint as dj
 import pytest
-from testcontainers.mysql import MySqlContainer
+from testcontainers.community.mysql import MySqlContainer
 
 logger = logging.getLogger(__name__)
 
