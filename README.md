@@ -12,12 +12,13 @@ browsable, organized storage that mirrors your database structure.
 ## Features
 
 - **Schema-addressed storage**: Paths mirror database structure
-  (`{schema}/{table}/{pk}/{field}.zarr`)
+  (`{schema}/{table}/{pk}/{field}_{token}.zarr`)
 - **Zarr format**: Portable, cloud-optimized array storage with chunking and
   compression
 - **Lazy loading**: Efficient access to large arrays without loading entire
   datasets
-- **Direct access**: Use `zarr.open(ref.fsmap)` for advanced Zarr features
+- **Direct access**: Fetch returns a read-only `zarr.Array`, with the full Zarr
+  API
 - **Automatic registration**: Codecs are automatically available after
   installation
 

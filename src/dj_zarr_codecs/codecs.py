@@ -39,7 +39,7 @@ class ZarrArrayCodec(SchemaCodec):  # type: ignore[misc]
     Store NumPy arrays in Zarr format with schema-addressed paths.
 
     The ``<zarr@>`` codec stores NumPy arrays as Zarr format in object storage
-    using schema-addressed paths: ``{schema}/{table}/{pk}/{field}.zarr``.
+    using schema-addressed paths: ``{schema}/{table}/{pk}/{field}_{token}.zarr``.
 
     Features:
         - **Portable**: Standard Zarr format readable by any Zarr library
@@ -82,7 +82,7 @@ class ZarrArrayCodec(SchemaCodec):  # type: ignore[misc]
 
     Storage Structure::
 
-        {store_root}/{schema}/{table}/{pk}/{field}.zarr/
+        {store_root}/{schema}/{table}/{pk}/{field}_{token}.zarr/
 
     Deletion:
         Requires garbage collection via ``dj.gc.collect()`` to remove
