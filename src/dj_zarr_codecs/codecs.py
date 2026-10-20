@@ -11,6 +11,29 @@ from datajoint import DataJointError
 from datajoint.builtin_codecs import SchemaCodec
 
 
+def _require_context(context: dict[str, Any] | None, *names: str) -> dict[str, Any]:
+    """
+    Return ``context``, checked to carry ``names``.
+
+    DataJoint 2.3.4 and later pass ``context`` to every codec that declares it:
+    ``schema``, ``table``, ``field``, and ``config`` on insert, ``config`` on
+    fetch. The codec reads them there only, never from underscore keys in ``key``.
+    """
+    missing = [n for n in names if context is None or context.get(n) is None]
+    if context is None or missing:
+        msg = (
+            "<zarr> needs the context that DataJoint 2.3.4 and later pass to codecs "
+            f"(missing: {', '.join(missing)}); install datajoint>=2.3.4"
+        )
+        raise DataJointError(msg)
+    return context
+
+
+def _primary_key(key: dict[str, Any] | None) -> dict[str, Any]:
+    """The primary key values in ``key``, without the underscore keys DataJoint 2.3 adds."""
+    return {k: v for k, v in (key or {}).items() if not k.startswith("_")}
+
+
 class ZarrArrayCodec(SchemaCodec):  # type: ignore[misc]
     """
     Store NumPy arrays in Zarr format with schema-addressed paths.
@@ -127,19 +150,20 @@ class ZarrArrayCodec(SchemaCodec):  # type: ignore[misc]
         Raises
         ------
         DataJointError
-            If encoding fails.
+            If ``context`` lacks the ``schema``, ``table``, ``field``, or
+            ``config`` that DataJoint 2.3.4 and later pass, or if encoding fails.
         """
         from dj_zarr_codecs import __version__  # noqa: PLC0415
 
-        schema, table, field, primary_key = self._extract_context(key, context)
-        config = self._codec_config(key, context)
+        context = _require_context(context, "schema", "table", "field", "config")
+        config = context["config"]
 
         # Build schema-addressed path
         path, _token = self._build_path(
-            schema,
-            table,
-            field,
-            primary_key,
+            context["schema"],
+            context["table"],
+            context["field"],
+            _primary_key(key),
             ext=".zarr",
             store_name=store_name,
             config=config,
@@ -193,9 +217,11 @@ class ZarrArrayCodec(SchemaCodec):  # type: ignore[misc]
         Raises
         ------
         DataJointError
-            If decoding fails.
+            If ``context`` lacks the ``config`` that DataJoint 2.3.4 and later
+            pass, or if decoding fails.
         """
-        config = self._codec_config(key, context)
+        del key  # the stored metadata locates the array
+        config = _require_context(context, "config")["config"]
         # Get storage backend
         backend = self._get_backend(stored.get("store"), config=config)
 
