@@ -31,7 +31,7 @@ classifiers = [
 ]
 dynamic = ["version"]
 dependencies = [
-    "datajoint>=2.1.0a22",
+    "datajoint>=2.3.4",
     "zarr>=2.0",
     "numpy>=2.0",
 ]
@@ -62,11 +62,6 @@ docs = [
 
 
 
-[tool.uv.sources]
-# Pin to last working commit before packaging bug (adapters subpackage not included in wheel)
-# TODO: Update to branch = "pre/v2.1" once https://github.com/datajoint/datajoint-python/pull/XXX is merged
-datajoint = {git = "https://github.com/datajoint/datajoint-python.git", rev = "f4b02583251c"}
-
 [project.entry-points."datajoint.codecs"]
 zarr = "dj_zarr_codecs:ZarrArrayCodec"
 
@@ -92,7 +87,8 @@ filterwarnings = [
   "ignore:.*'unquoteResults' argument is deprecated:DeprecationWarning",
   "ignore:.*'endQuoteChar' argument is deprecated:DeprecationWarning",
   "ignore:The @wait_container_is_ready decorator is deprecated:DeprecationWarning",
-  "ignore:No datajoint.json found.:UserWarning"
+  "ignore:No datajoint.json found.:UserWarning",
+  "ignore:datajoint.migrate is deprecated:DeprecationWarning"
 ]
 log_level = "INFO"
 testpaths = [

@@ -27,6 +27,8 @@ browsable, organized storage that mirrors your database structure.
 pip install dj-zarr-codecs
 ```
 
+Requires Python 3.11 or later and `datajoint>=2.3.4`.
+
 ## Quick Start
 
 ```python

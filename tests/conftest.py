@@ -86,7 +86,6 @@ def dj_connection(db_creds: DBCreds, tmp_path) -> Generator[dj.Connection, None,
         "database.use_tls": dj.config.database.use_tls,
         "safemode": dj.config.safemode,
         "loglevel": dj.config.loglevel,
-        "enable_python_native_blobs": dj.config.enable_python_native_blobs,
     }
     old_stores = dict(dj.config.stores)
 
@@ -101,7 +100,6 @@ def dj_connection(db_creds: DBCreds, tmp_path) -> Generator[dj.Connection, None,
     dj.config["database.use_tls"] = False
     dj.config["safemode"] = False
     dj.config["loglevel"] = "INFO"
-    dj.config["enable_python_native_blobs"] = True
 
     # Configure a local file store for testing
     dj.config.stores["store"] = {
