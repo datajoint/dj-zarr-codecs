@@ -11,12 +11,35 @@ from datajoint import DataJointError
 from datajoint.builtin_codecs import SchemaCodec
 
 
+def _require_context(context: dict[str, Any] | None, *names: str) -> dict[str, Any]:
+    """
+    Return ``context``, checked to carry ``names``.
+
+    DataJoint 2.3.4 and later pass ``context`` to every codec that declares it:
+    ``schema``, ``table``, ``field``, and ``config`` on insert, ``config`` on
+    fetch. The codec reads them there only, never from underscore keys in ``key``.
+    """
+    missing = [n for n in names if context is None or context.get(n) is None]
+    if context is None or missing:
+        msg = (
+            "<zarr> needs the context that DataJoint 2.3.4 and later pass to codecs "
+            f"(missing: {', '.join(missing)}); install datajoint>=2.3.4"
+        )
+        raise DataJointError(msg)
+    return context
+
+
+def _primary_key(key: dict[str, Any] | None) -> dict[str, Any]:
+    """The primary key values in ``key``, without the underscore keys DataJoint 2.3 adds."""
+    return {k: v for k, v in (key or {}).items() if not k.startswith("_")}
+
+
 class ZarrArrayCodec(SchemaCodec):  # type: ignore[misc]
     """
     Store NumPy arrays in Zarr format with schema-addressed paths.
 
     The ``<zarr@>`` codec stores NumPy arrays as Zarr format in object storage
-    using schema-addressed paths: ``{schema}/{table}/{pk}/{field}.zarr``.
+    using schema-addressed paths: ``{schema}/{table}/{pk}/{field}_{token}.zarr``.
 
     Features:
         - **Portable**: Standard Zarr format readable by any Zarr library
@@ -59,7 +82,7 @@ class ZarrArrayCodec(SchemaCodec):  # type: ignore[misc]
 
     Storage Structure::
 
-        {store_root}/{schema}/{table}/{pk}/{field}.zarr/
+        {store_root}/{schema}/{table}/{pk}/{field}_{token}.zarr/
 
     Deletion:
         Requires garbage collection via ``dj.gc.collect()`` to remove
@@ -101,6 +124,7 @@ class ZarrArrayCodec(SchemaCodec):  # type: ignore[misc]
         value: np.ndarray[Any, Any] | zarr.Array[Any],
         *,
         key: dict[str, Any] | None = None,
+        context: dict[str, Any] | None = None,
         store_name: str | None = None,
     ) -> dict[str, Any]:
         """
@@ -112,6 +136,9 @@ class ZarrArrayCodec(SchemaCodec):  # type: ignore[misc]
             NumPy array to store.
         key : dict, optional
             Primary key values for path construction.
+        context : dict, optional
+            ``schema``, ``table``, ``field``, and ``config`` of the insert, as
+            DataJoint passes them.
         store_name : str, optional
             Name of the object store to use.
 
@@ -123,20 +150,27 @@ class ZarrArrayCodec(SchemaCodec):  # type: ignore[misc]
         Raises
         ------
         DataJointError
-            If encoding fails.
+            If ``context`` lacks the ``schema``, ``table``, ``field``, or
+            ``config`` that DataJoint 2.3.4 and later pass, or if encoding fails.
         """
         from dj_zarr_codecs import __version__  # noqa: PLC0415
 
-        # Extract context from key
-        schema, table, field, primary_key = self._extract_context(key)
+        context = _require_context(context, "schema", "table", "field", "config")
+        config = context["config"]
 
         # Build schema-addressed path
         path, _token = self._build_path(
-            schema, table, field, primary_key, ext=".zarr", store_name=store_name
+            context["schema"],
+            context["table"],
+            context["field"],
+            _primary_key(key),
+            ext=".zarr",
+            store_name=store_name,
+            config=config,
         )
 
         # Get storage backend
-        backend = self._get_backend(store_name)
+        backend = self._get_backend(store_name, config=config)
 
         # Get fsspec mapper for direct Zarr write
         store_map = backend.get_fsmap(path)
@@ -156,7 +190,11 @@ class ZarrArrayCodec(SchemaCodec):  # type: ignore[misc]
         }
 
     def decode(
-        self, stored: dict[str, Any], *, key: dict[str, Any] | None = None
+        self,
+        stored: dict[str, Any],
+        *,
+        key: dict[str, Any] | None = None,
+        context: dict[str, Any] | None = None,
     ) -> zarr.Array[Any]:
         """
         Decode Zarr array from object storage.
@@ -167,6 +205,8 @@ class ZarrArrayCodec(SchemaCodec):  # type: ignore[misc]
             Metadata from database containing path and store.
         key : dict, optional
             Primary key values (unused).
+        context : dict, optional
+            ``config`` of the fetching connection, as DataJoint passes it.
 
         Returns
         -------
@@ -177,11 +217,13 @@ class ZarrArrayCodec(SchemaCodec):  # type: ignore[misc]
         Raises
         ------
         DataJointError
-            If decoding fails.
+            If ``context`` lacks the ``config`` that DataJoint 2.3.4 and later
+            pass, or if decoding fails.
         """
-        del key  # unused
+        del key  # the stored metadata locates the array
+        config = _require_context(context, "config")["config"]
         # Get storage backend
-        backend = self._get_backend(stored.get("store"))
+        backend = self._get_backend(stored.get("store"), config=config)
 
         # Get fsspec mapper for Zarr path
         store_map = backend.get_fsmap(stored["path"])

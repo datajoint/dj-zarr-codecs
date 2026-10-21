@@ -12,7 +12,7 @@ browsable, organized storage that mirrors your database structure.
 ## Features
 
 - **Schema-addressed storage**: Paths mirror database structure
-  (`{schema}/{table}/{pk}/{field}.zarr`)
+  (`{schema}/{table}/{pk}/{field}_{token}.zarr`)
 - **Zarr format**: Portable, cloud-optimized array storage with chunking and
   compression
 - **Lazy loading**: Efficient access to large arrays without loading entire
@@ -25,6 +25,8 @@ browsable, organized storage that mirrors your database structure.
 ```bash
 pip install dj-zarr-codecs
 ```
+
+Requires Python 3.11 or later and `datajoint>=2.3.4`.
 
 ## Quick Start
 
@@ -108,14 +110,15 @@ class MyTable(dj.Manual):
 Arrays are stored with schema-addressed paths:
 
 ```
-{store_root}/{schema}/{table}/{pk}/{field}.zarr/
+{store_root}/{schema}/{table}/{pk}/{field}_{token}.zarr/
 ```
 
-For example, a recording with `recording_id=1` in schema `neuro` would be stored
-at:
+`{token}` is a random 8-character suffix that keeps each stored array's path
+unique. For example, a recording with `recording_id=1` in schema `neuro` would
+be stored at:
 
 ```
-s3://my-bucket/datajoint/neuro/recording/recording_id=1/waveform.zarr/
+s3://my-bucket/datajoint/neuro/recording/recording_id=1/waveform_x7k2m9qp.zarr/
 ```
 
 This structure makes it easy to browse and manage stored data outside of
