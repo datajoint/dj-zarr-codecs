@@ -9,3 +9,13 @@ updates:
       actions:
         patterns:
           - "*"
+
+  # Maintain Python dependencies and uv.lock
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      python:
+        patterns:
+          - "*"
